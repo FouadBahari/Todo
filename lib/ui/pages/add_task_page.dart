@@ -5,6 +5,7 @@ import 'package:todoapp/controllers/task_controller.dart';
 import 'package:todoapp/ui/widgets/button.dart';
 import 'package:todoapp/ui/widgets/input_field.dart';
 
+import '../../models/task.dart';
 import '../theme.dart';
 
 class AddTaskPage extends StatefulWidget {
@@ -23,12 +24,12 @@ class _AddTaskPageState extends State<AddTaskPage> {
   DateTime _selectedDate = DateTime.now();
   String _startTime = DateFormat('hh:mm a').format(DateTime.now());
   String _endTime = DateFormat('hh:mm a')
-      .format(DateTime.now().add(Duration(minutes: 15)))
+      .format(DateTime.now().add(const Duration(minutes: 15)))
       .toString();
   int _selectedRemind = 5;
-  List<int> _remindList = [5, 10, 15, 20];
+  final List<int> _remindList = [5, 10, 15, 20];
   String _selectedRepeat = 'None';
-  List<String> _repeatList = ['None', 'Daily', 'Weekly', 'Monthly'];
+  final List<String> _repeatList = ['None', 'Daily', 'Weekly', 'Monthly'];
 
   int _selectedColor = 0;
   @override
@@ -57,7 +58,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
               title: 'Date',
               hint: DateFormat.yMd().format(_selectedDate),
               widget: IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  _getDateFromUser();
+                },
                 icon: const Icon(Icons.calendar_today_outlined),
               ),
             ),
@@ -68,7 +71,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     title: 'Start Time',
                     hint: _startTime,
                     widget: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _getTimeFromUser(isStartTime: true);
+                      },
                       icon: const Icon(Icons.access_time_outlined),
                     ),
                   ),
@@ -78,7 +83,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     title: 'End Time',
                     hint: _endTime,
                     widget: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        _getTimeFromUser(isStartTime: false);
+                      },
                       icon: const Icon(Icons.access_time_outlined),
                     ),
                   ),
@@ -127,7 +134,6 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   icon: const Icon(
                     Icons.keyboard_arrow_down_outlined,
                   ),
-                  onTap: () {},
                   onChanged: (newValue) {
                     setState(() {
                       _selectedRepeat = newValue!;
@@ -187,7 +193,11 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   const Expanded(
                     child: Text(''),
                   ),
-                  MyButton(label: 'Create Task', onTap: () {})
+                  MyButton(
+                      label: 'Create Task',
+                      onTap: () {
+                        _validateTask();
+                      })
                 ],
               ),
             ),
@@ -220,5 +230,69 @@ class _AddTaskPageState extends State<AddTaskPage> {
         ),
       ],
     );
+  }
+
+  _validateTask() {
+    if (_titleController.text.isNotEmpty && _noteController.text.isNotEmpty) {
+      _addTaskToDb();
+      Get.back();
+    } else if (_titleController.text.isEmpty || _noteController.text.isEmpty) {
+      Get.snackbar(
+        'required',
+        'All fields are required',
+        snackPosition: SnackPosition.BOTTOM,
+        colorText: orangeClr,
+        backgroundColor: Colors.white,
+        icon: const Icon(Icons.warning_amber_rounded, color: Colors.red),
+      );
+    } else {
+      print('Something bad happened');
+    }
+  }
+
+  _addTaskToDb() async {
+    int idValue = await _taskController.addTask(
+      task: Task(
+        title: _titleController.text,
+        note: _noteController.text,
+        color: _selectedColor,
+        date: DateFormat.yMd().format(_selectedDate),
+        endTime: _endTime,
+        startTime: _startTime,
+        isCompleted: 0,
+        remind: _selectedRemind,
+        repeat: _selectedRepeat,
+      ),
+    );
+    print('$idValue');
+  }
+
+  _getDateFromUser() async {
+    DateTime? _pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2015),
+      lastDate: DateTime(2030),
+    );
+    _pickedDate != null
+        ? setState(() => _selectedDate = _pickedDate)
+        : print('something wrong');
+  }
+
+  _getTimeFromUser({required bool isStartTime}) async {
+    TimeOfDay? _pickedTime = await showTimePicker(
+      context: context,
+      initialTime: isStartTime
+          ? TimeOfDay.fromDateTime(DateTime.now())
+          : TimeOfDay.fromDateTime(
+              DateTime.now().add(const Duration(minutes: 15))),
+    );
+    String _formattedTime = _pickedTime!.format(context);
+    if (isStartTime)
+      setState(() => _startTime = _formattedTime);
+    else if (!isStartTime)
+      setState(() => _endTime = _formattedTime);
+    else
+      print('something wrong');
   }
 }

@@ -36,7 +36,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         backgroundColor: context.theme.backgroundColor,
         elevation: 1,
         title: Text(
-          _payload.toString().split("|")[0],
+          _payload.toString().split('|')[0],
           style: Themes().subHeadingStyle,
         ),
       ),
